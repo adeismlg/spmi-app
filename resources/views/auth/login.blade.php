@@ -7,15 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family:'Public Sans',sans-serif; background:#f5f5f9; }
-        .card { border:0; box-shadow:0 .25rem 1rem rgba(161,172,184,.45); border-radius:.6rem; }
-        .btn-primary { --bs-btn-bg:#696cff; --bs-btn-border-color:#696cff; --bs-btn-hover-bg:#5f61e6; --bs-btn-hover-border-color:#5f61e6; }
+        body { font-family:'Public Sans',sans-serif; background:#f7f7fb; }
+        .card { border:1px solid #e7e5ef; box-shadow:0 .25rem 1rem rgba(47,38,89,.08); border-radius:.65rem; }
+        .btn-primary { --bs-btn-bg:#5b3fc6; --bs-btn-border-color:#5b3fc6; --bs-btn-hover-bg:#4930a8; --bs-btn-hover-border-color:#4930a8; }
     </style>
 </head>
 <body class="d-flex align-items-center min-vh-100">
 <div class="container" style="max-width:420px">
     <div class="card p-4">
-        <h4 class="fw-bold text-center mb-1" style="color:#696cff">SPMI</h4>
+        <h4 class="fw-bold text-center mb-1" style="color:#5b3fc6">SPMI</h4>
         <p class="text-center text-muted mb-4">Sistem Penjaminan Mutu Internal — siklus PPEPP</p>
 
         <form method="POST" action="{{ route('login') }}">

@@ -7,10 +7,10 @@
         @page { margin: 34px 38px; }
         body { font-family: 'DejaVu Sans', sans-serif; font-size: 10px; color: #222; }
         h1 { font-size: 17px; margin: 0 0 3px; }
-        h2 { font-size: 12px; margin: 18px 0 6px; color: #5457c9; }
+        h2 { font-size: 12px; margin: 18px 0 6px; color: #5b3fc6; }
         .meta { color: #666; margin-bottom: 14px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #696cff; color: #fff; text-align: left; padding: 5px; font-size: 9px; }
+        th { background: #392579; color: #fff; text-align: left; padding: 5px; font-size: 9px; }
         td { border-bottom: 1px solid #ddd; padding: 5px; vertical-align: middle; }
         .bar { background: #e9e9f3; height: 8px; width: 100%; }
         .bar span { display: block; height: 8px; }
@@ -42,11 +42,11 @@
                 <tr>
                     <td><strong>{{ $std->kode }}</strong> {{ $std->nama }}</td>
                     <td>
-                        <div class="bar"><span style="width: {{ $self }}%; background:#696cff"></span></div>
+                        <div class="bar"><span style="width: {{ $self }}%; background:#5b3fc6"></span></div>
                         {{ number_format($self, 1) }}
                     </td>
                     <td>
-                        <div class="bar"><span style="width: {{ $aud }}%; background:#ff3e1d"></span></div>
+                        <div class="bar"><span style="width: {{ $aud }}%; background:#18a88a"></span></div>
                         {{ number_format($aud, 1) }}
                     </td>
                 </tr>

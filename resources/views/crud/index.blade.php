@@ -2,7 +2,7 @@
 @section('title', $title)
 
 @section('content')
-<div class="card">
+<div class="card crud-list-card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">{{ $title }}</h5>
         @if ($canManage && Route::has($routeName.'.create'))
@@ -26,65 +26,67 @@
         </form>
     @endif
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead>
-            <tr>
-                <th style="width:50px">#</th>
-                @foreach ($columns as $c) <th>{{ $c['label'] }}</th> @endforeach
-                <th class="text-end">Aksi</th>
-            </tr>
-            </thead>
-            <tbody>
-            @forelse ($rows as $row)
+    <div class="card-body p-3">
+        <div class="crud-table-shell table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
                 <tr>
-                    <td>{{ $rows->firstItem() + $loop->index }}</td>
-                    @foreach ($columns as $c)
-                        <td>
-                            @if (isset($c['badge']))
-                                @php [$text, $color] = $c['badge']($row); @endphp
-                                <span class="badge bg-{{ $color }}">{{ $text }}</span>
-                            @else
-                                {{ $c['value']($row) }}
+                    <th style="width:50px">#</th>
+                    @foreach ($columns as $c) <th>{{ $c['label'] }}</th> @endforeach
+                    <th class="text-end">Aksi</th>
+                </tr>
+                </thead>
+                <tbody>
+                @forelse ($rows as $row)
+                    <tr>
+                        <td>{{ $rows->firstItem() + $loop->index }}</td>
+                        @foreach ($columns as $c)
+                            <td>
+                                @if (isset($c['badge']))
+                                    @php [$text, $color] = $c['badge']($row); @endphp
+                                    <span class="badge bg-{{ $color }}">{{ $text }}</span>
+                                @else
+                                    {{ $c['value']($row) }}
+                                @endif
+                            </td>
+                        @endforeach
+                        <td class="text-end text-nowrap">
+                            @foreach ($actions as $a)
+                                @continue(isset($a['visible']) && ! $a['visible']($row))
+                                @php
+                                    $label = $a['label'] instanceof \Closure ? $a['label']($row) : $a['label'];
+                                    $url = $a['route']($row);
+                                    $cls = 'btn btn-sm '.($a['class'] ?? 'btn-outline-secondary');
+                                @endphp
+                                @if (($a['method'] ?? 'get') === 'post')
+                                    <form method="POST" action="{{ $url }}" class="d-inline"
+                                          @isset($a['confirm']) onsubmit="return confirm('{{ $a['confirm'] }}')" @endisset>
+                                        @csrf
+                                        <button class="{{ $cls }}">{{ $label }}</button>
+                                    </form>
+                                @else
+                                    <a href="{{ $url }}" class="{{ $cls }}">{{ $label }}</a>
+                                @endif
+                            @endforeach
+
+                            @if ($canManage && Route::has($routeName.'.edit'))
+                                <a href="{{ route($routeName.'.edit', $row->id) }}" class="btn btn-sm btn-outline-primary" title="Ubah"><i class="bi bi-pencil"></i></a>
+                            @endif
+                            @if ($canManage && Route::has($routeName.'.destroy'))
+                                <form method="POST" action="{{ route($routeName.'.destroy', $row->id) }}" class="d-inline"
+                                      onsubmit="return confirm('Hapus data ini?')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-sm btn-outline-danger" title="Hapus"><i class="bi bi-trash"></i></button>
+                                </form>
                             @endif
                         </td>
-                    @endforeach
-                    <td class="text-end text-nowrap">
-                        @foreach ($actions as $a)
-                            @continue(isset($a['visible']) && ! $a['visible']($row))
-                            @php
-                                $label = $a['label'] instanceof \Closure ? $a['label']($row) : $a['label'];
-                                $url = $a['route']($row);
-                                $cls = 'btn btn-sm '.($a['class'] ?? 'btn-outline-secondary');
-                            @endphp
-                            @if (($a['method'] ?? 'get') === 'post')
-                                <form method="POST" action="{{ $url }}" class="d-inline"
-                                      @isset($a['confirm']) onsubmit="return confirm('{{ $a['confirm'] }}')" @endisset>
-                                    @csrf
-                                    <button class="{{ $cls }}">{{ $label }}</button>
-                                </form>
-                            @else
-                                <a href="{{ $url }}" class="{{ $cls }}">{{ $label }}</a>
-                            @endif
-                        @endforeach
-
-                        @if ($canManage && Route::has($routeName.'.edit'))
-                            <a href="{{ route($routeName.'.edit', $row->id) }}" class="btn btn-sm btn-outline-primary" title="Ubah"><i class="bi bi-pencil"></i></a>
-                        @endif
-                        @if ($canManage && Route::has($routeName.'.destroy'))
-                            <form method="POST" action="{{ route($routeName.'.destroy', $row->id) }}" class="d-inline"
-                                  onsubmit="return confirm('Hapus data ini?')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger" title="Hapus"><i class="bi bi-trash"></i></button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="{{ count($columns) + 2 }}" class="text-center text-muted py-5">Belum ada data.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+                    </tr>
+                @empty
+                    <tr><td colspan="{{ count($columns) + 2 }}" class="text-center text-muted py-5">Belum ada data.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     @if ($rows->hasPages())

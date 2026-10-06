@@ -9,7 +9,7 @@
         h1 { font-size: 15px; margin: 0 0 4px; }
         .meta { color: #666; margin-bottom: 12px; }
         table { width: 100%; border-collapse: collapse; }
-        th { background: #696cff; color: #fff; font-size: 8.5px; text-align: left; padding: 5px 4px; }
+        th { background: #392579; color: #fff; font-size: 8.5px; text-align: left; padding: 5px 4px; }
         td { border-bottom: 1px solid #ddd; padding: 4px; vertical-align: top; }
         tr:nth-child(even) td { background: #f7f7fb; }
         .empty { text-align: center; color: #888; padding: 20px; }

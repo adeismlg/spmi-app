@@ -8,7 +8,26 @@
     $trend = $data['trend'];
 @endphp
 
-<form method="GET" class="row g-2 mb-4 align-items-end">
+@if ($cycle)
+    <section class="dashboard-banner mb-3">
+        <div class="dashboard-welcome">
+            <span class="dashboard-avatar" aria-hidden="true"><i class="bi bi-person-fill"></i></span>
+            <div>
+                <span class="dashboard-date">{{ now()->locale('id')->translatedFormat('l, j F Y') }}</span>
+                <h2>Hai, {{ auth()->user()->name }}!</h2>
+                <span class="dashboard-role">{{ auth()->user()->jabatan?->label() ?? auth()->user()->getRoleNames()->first() }}</span>
+                <p>Ringkasan mutu · Siklus PPEPP {{ $cycle->tahun }}</p>
+            </div>
+        </div>
+        <div class="dashboard-stage" role="status" aria-label="Tahap PPEPP saat ini">
+            <span class="dashboard-stage-label"><i class="bi bi-exclamation-circle me-1"></i>Perhatian · Tahap PPEPP</span>
+            <strong>{{ $cycle->tahap_aktif->label() }}</strong>
+            <small>Siklus {{ $cycle->nama }}</small>
+        </div>
+    </section>
+@endif
+
+<form method="GET" class="dashboard-filters d-flex flex-wrap gap-2 mb-4 align-items-end">
     <div class="col-auto">
         <label class="form-label small mb-1">Siklus</label>
         <select name="cycle_id" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -42,27 +61,39 @@
             ['RTL terlambat', $stats['actions_overdue'], 'bi-alarm', 'danger'],
         ] as [$label, $value, $icon, $color])
             <div class="col-6 col-lg">
-                <div class="card h-100"><div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div><div class="text-muted small">{{ $label }}</div><div class="fs-3 fw-bold">{{ $value }}</div></div>
-                        <span class="text-{{ $color }} fs-3"><i class="bi {{ $icon }}"></i></span>
+                <div class="card dashboard-stat h-100"><div class="card-body">
+                    <div>
+                        <div class="dashboard-stat-label">{{ $label }}</div>
+                        <div class="dashboard-stat-value">{{ $value }}</div>
                     </div>
+                    <span class="dashboard-stat-icon {{ $color }}"><i class="bi {{ $icon }}"></i></span>
                 </div></div>
             </div>
         @endforeach
     </div>
 
+    @if ($stats['actions_overdue'] > 0)
+        <div class="dashboard-notice" role="alert">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <div>
+                <strong>Perhatian: {{ $stats['actions_overdue'] }} RTL terlambat</strong>
+                <p>Segera tinjau tindak lanjut yang melewati batas waktu.</p>
+            </div>
+            <a href="{{ route('corrective-actions.index') }}">Lihat tindak lanjut <i class="bi bi-arrow-right"></i></a>
+        </div>
+    @endif
+
     <div class="row g-3 mb-4">
         <div class="col-lg-7">
             <div class="card h-100">
                 <div class="card-header fw-semibold">Capaian per Standar — Target vs Evaluasi Diri vs Audit</div>
-                <div class="card-body"><div style="max-height:420px"><canvas id="radarChart"></canvas></div></div>
+                <div class="card-body dashboard-chart-body"><div style="max-height:420px"><canvas id="radarChart"></canvas></div></div>
             </div>
         </div>
         <div class="col-lg-5">
             <div class="card h-100">
                 <div class="card-header fw-semibold">Tren Antar Tahun (rata-rata skor)</div>
-                <div class="card-body"><canvas id="trendChart"></canvas></div>
+                <div class="card-body dashboard-chart-body"><canvas id="trendChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -71,7 +102,7 @@
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header fw-semibold">Temuan per Kategori</div>
-                <ul class="list-group list-group-flush">
+                <ul class="list-group list-group-flush dashboard-list">
                     @foreach (\App\Enums\Conformity::cases() as $c)
                         @continue(! $c->isFinding())
                         <li class="list-group-item d-flex justify-content-between">
@@ -85,7 +116,7 @@
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header fw-semibold">Status Rencana Tindak Lanjut</div>
-                <ul class="list-group list-group-flush">
+                <ul class="list-group list-group-flush dashboard-list">
                     @foreach (\App\Enums\ActionStatus::cases() as $s)
                         <li class="list-group-item d-flex justify-content-between">
                             <span>{{ $s->label() }}</span>
@@ -112,8 +143,8 @@
             labels: radar.labels,
             datasets: [
                 { label: 'Target', data: radar.target, borderColor: '#a1acb8', borderDash: [6, 4], fill: false, pointRadius: 0 },
-                { label: 'Evaluasi Diri', data: radar.self, borderColor: '#696cff', backgroundColor: 'rgba(105,108,255,.18)', fill: true },
-                { label: 'Audit', data: radar.audit, borderColor: '#ff3e1d', backgroundColor: 'rgba(255,62,29,.12)', fill: true },
+                { label: 'Evaluasi Diri', data: radar.self, borderColor: '#5b3fc6', backgroundColor: 'rgba(91,63,198,.16)', fill: true },
+                { label: 'Audit', data: radar.audit, borderColor: '#18a88a', backgroundColor: 'rgba(24,168,138,.12)', fill: true },
             ],
         },
         options: { scales: { r: { min: 0, max: 100, ticks: { stepSize: 20 } } } },
@@ -124,8 +155,8 @@
         data: {
             labels: trend.labels,
             datasets: [
-                { label: 'Evaluasi Diri', data: trend.self, borderColor: '#696cff', tension: .3 },
-                { label: 'Audit', data: trend.audit, borderColor: '#ff3e1d', tension: .3 },
+                { label: 'Evaluasi Diri', data: trend.self, borderColor: '#5b3fc6', backgroundColor: 'rgba(91,63,198,.1)', tension: .3 },
+                { label: 'Audit', data: trend.audit, borderColor: '#18a88a', backgroundColor: 'rgba(24,168,138,.1)', tension: .3 },
             ],
         },
         options: { scales: { y: { min: 0, max: 100 } } },
