@@ -7,6 +7,10 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Instalasi dan deployment SPMI
+
+Lihat [Panduan Fresh Install, Migrasi, dan Seed](docs/panduan-fresh-install-migrasi-seed.md) untuk persiapan server, migration, pembuatan administrator pertama, pemuatan data standar, seed demo, dan peningkatan versi tanpa menghapus data.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
