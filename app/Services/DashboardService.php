@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ActionStatus;
+use App\Enums\SubmissionStatus;
 use App\Models\Cycle;
 use App\Models\Standard;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,9 @@ class DashboardService
 {
     public function build(?Cycle $cycle, ?int $unitId): array
     {
-        $standards = Standard::where('is_active', true)->orderBy('kode')->get();
+        $standards = Standard::where('is_active', true)
+            ->when($cycle?->standard_edition_id, fn ($query, $editionId) => $query->where('standard_edition_id', $editionId))
+            ->orderBy('kode')->get();
 
         if (! $cycle) {
             return ['standards' => $standards, 'radar' => null, 'stats' => [], 'trend' => []];
@@ -20,6 +23,7 @@ class DashboardService
         $self = DB::table('self_evaluations as se')
             ->join('indicators as i', 'i.id', '=', 'se.indicator_id')
             ->where('se.cycle_id', $cycle->id)
+            ->where('se.status', '!=', SubmissionStatus::Draft->value)
             ->when($unitId, fn ($q) => $q->where('se.unit_id', $unitId))
             ->groupBy('i.standard_id')
             ->selectRaw('i.standard_id, AVG(se.skor) as avg_skor')
@@ -68,7 +72,9 @@ class DashboardService
 
         $stats = [
             'unit_submitted' => DB::table('self_evaluations')->where('cycle_id', $cycle->id)
-                ->where('status', '!=', 'draft')->distinct()->count('unit_id'),
+                ->where('status', '!=', SubmissionStatus::Draft->value)
+                ->when($unitId, fn ($q) => $q->where('unit_id', $unitId))
+                ->distinct()->count('unit_id'),
             'audits_done' => DB::table('audits')->where('cycle_id', $cycle->id)->where('status', 'selesai')
                 ->when($unitId, fn ($q) => $q->where('unit_id', $unitId))->count(),
             'audits_total' => DB::table('audits')->where('cycle_id', $cycle->id)
@@ -85,6 +91,7 @@ class DashboardService
 
         // Tren antar tahun (rata-rata skor evaluasi diri & audit seluruh siklus).
         $trendSelf = DB::table('self_evaluations as se')->join('cycles as c', 'c.id', '=', 'se.cycle_id')
+            ->where('se.status', '!=', SubmissionStatus::Draft->value)
             ->when($unitId, fn ($q) => $q->where('se.unit_id', $unitId))
             ->groupBy('c.tahun')->selectRaw('c.tahun, AVG(se.skor) as v')->pluck('v', 'tahun');
         $trendAudit = DB::table('audit_checklists as ac')->join('audits as a', 'a.id', '=', 'ac.audit_id')

@@ -13,6 +13,7 @@ use App\Models\Unit;
 use App\Services\EvaluationAccess;
 use App\Services\ScoreService;
 use App\Services\SemesterWorkflow;
+use App\Services\WorkflowNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -60,12 +61,13 @@ class SelfEvaluationController extends Controller
     }
 
     /** Semua indikator yang ditugaskan ke unit (semua semester). */
-    private function assigned(int $unitId, ?string $jabatan): Collection
+    private function assigned(int $unitId, ?string $jabatan, ?int $editionId): Collection
     {
         return Indicator::with(['standard', 'statement', 'targets'])
             ->whereHas('statement.assignments', fn ($q) => $q->where('unit_id', $unitId)
                 ->when($jabatan, fn ($q, $j) => $q->where('jabatan', $j)))
-            ->whereHas('standard', fn ($q) => $q->where('is_active', true))
+            ->whereHas('standard', fn ($q) => $q->where('is_active', true)
+                ->when($editionId, fn ($q, $id) => $q->where('standard_edition_id', $id)))
             ->get()
             ->sortBy(fn ($i) => [$i->standard->nomor ?? 99, $i->kode])
             ->values();
@@ -80,7 +82,7 @@ class SelfEvaluationController extends Controller
 
         $unitId = $this->unitId($request);
         $semester = $this->semester($request);
-        $all = $this->assigned($unitId, $this->jabatan($request));
+        $all = $this->assigned($unitId, $this->jabatan($request), $cycle->standard_edition_id);
 
         $indicators = $all->filter(fn ($i) => in_array($semester, $i->semesters($cycle->tahun), true));
         $evals = SelfEvaluation::where('cycle_id', $cycle->id)->where('unit_id', $unitId)
@@ -95,7 +97,8 @@ class SelfEvaluationController extends Controller
                 1 => $all->filter(fn ($i) => in_array(1, $i->semesters($cycle->tahun), true))->count(),
                 2 => $all->filter(fn ($i) => in_array(2, $i->semesters($cycle->tahun), true))->count(),
             ],
-            'standards' => Standard::orderBy('nomor')->get()->keyBy('id'),
+            'standards' => Standard::where('standard_edition_id', $cycle->standard_edition_id)
+                ->orderBy('nomor')->get()->keyBy('id'),
             'groups' => $indicators->groupBy('standard_id'),
             'evals' => $evals,
             'evaluationEditable' => $evals->mapWithKeys(fn ($evaluation, $indicatorId) => [
@@ -107,8 +110,11 @@ class SelfEvaluationController extends Controller
         ]);
     }
 
-    public function update(Request $request, SemesterWorkflow $workflow): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        SemesterWorkflow $workflow,
+        WorkflowNotificationService $notifications,
+    ): RedirectResponse {
         $cycle = Cycle::current();
         abort_unless($cycle, 404);
         $unitId = $this->unitId($request);
@@ -122,7 +128,7 @@ class SelfEvaluationController extends Controller
         ]);
 
         // Hanya indikator yang memang ditugaskan ke unit/jabatan ini pada semester ini yang boleh disimpan.
-        $allowed = $this->assigned($unitId, $this->jabatan($request))
+        $allowed = $this->assigned($unitId, $this->jabatan($request), $cycle->standard_edition_id)
             ->filter(fn ($i) => in_array($semester, $i->semesters($cycle->tahun), true))
             ->keyBy('id');
 
@@ -183,6 +189,10 @@ class SelfEvaluationController extends Controller
                 }
             }
         });
+
+        if ($submit) {
+            $notifications->notifyEvaluationSubmitted($cycle, Unit::findOrFail($unitId), $semester);
+        }
 
         return redirect()->route('self-evaluations.index', ['unit_id' => $unitId, 'semester' => $semester])
             ->with('success', ($submit ? 'Pengajuan permanen evaluasi diri berhasil' : 'Draft evaluasi diri disimpan').' — '.Semester::from($semester)->label().'.');

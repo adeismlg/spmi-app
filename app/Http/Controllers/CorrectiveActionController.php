@@ -8,6 +8,7 @@ use App\Models\CorrectiveAction;
 use App\Models\Finding;
 use App\Models\User;
 use App\Services\RtlReminderService;
+use App\Services\WorkflowNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,8 @@ use Illuminate\Validation\Rule;
 class CorrectiveActionController extends CrudController
 {
     use LimitsToUser;
+
+    private ?array $previousActionState = null;
 
     protected string $model = CorrectiveAction::class;
 
@@ -96,8 +99,46 @@ class CorrectiveActionController extends CrudController
         ];
     }
 
-    public function verify(Request $request, string $id): RedirectResponse
+    protected function beforeSave(array $data, Request $request, ?Model $record): array
     {
+        $this->previousActionState = $record
+            ? [
+                'finding_id' => $record->finding_id,
+                'akar_masalah' => $record->akar_masalah,
+                'tindakan' => $record->tindakan,
+                'pic_user_id' => $record->pic_user_id,
+                'target_selesai' => $record->target_selesai?->toDateString(),
+                'status' => $record->status->value,
+            ]
+            : null;
+
+        return $data;
+    }
+
+    protected function afterSave(Model $record, Request $request): void
+    {
+        $currentState = [
+            'finding_id' => $record->finding_id,
+            'akar_masalah' => $record->akar_masalah,
+            'tindakan' => $record->tindakan,
+            'pic_user_id' => $record->pic_user_id,
+            'target_selesai' => $record->target_selesai?->toDateString(),
+            'status' => $record->status->value,
+        ];
+
+        if ($record->wasRecentlyCreated || $this->previousActionState !== $currentState) {
+            app(WorkflowNotificationService::class)->notifyCorrectiveActionChanged(
+                $record,
+                $record->wasRecentlyCreated,
+            );
+        }
+    }
+
+    public function verify(
+        Request $request,
+        string $id,
+        WorkflowNotificationService $notifications,
+    ): RedirectResponse {
         $action = $this->query()->findOrFail($id);
 
         abort_unless($action->status === ActionStatus::Selesai, 422, 'RTL harus berstatus Selesai sebelum diverifikasi.');
@@ -108,6 +149,7 @@ class CorrectiveActionController extends CrudController
             'verified_at' => now(),
             'catatan_verifikasi' => $request->input('catatan'),
         ]);
+        $notifications->notifyCorrectiveActionChanged($action, false);
 
         return back()->with('success', 'RTL terverifikasi.');
     }

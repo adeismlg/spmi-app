@@ -5,11 +5,12 @@ namespace App\Models;
 use App\Enums\CycleStage;
 use App\Enums\StageStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cycle extends Model
 {
-    protected $fillable = ['tahun', 'nama', 'tahap_aktif', 'is_active'];
+    protected $fillable = ['standard_edition_id', 'tahun', 'nama', 'tahap_aktif', 'is_active'];
 
     protected function casts(): array
     {
@@ -41,6 +42,11 @@ class Cycle extends Model
     public function stages(): HasMany
     {
         return $this->hasMany(CycleStageRecord::class);
+    }
+
+    public function standardEdition(): BelongsTo
+    {
+        return $this->belongsTo(StandardEdition::class);
     }
 
     public function selfEvaluations(): HasMany

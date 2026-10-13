@@ -24,8 +24,11 @@ use App\Models\Statement;
 use App\Models\StatementAssignment;
 use App\Models\Unit;
 use App\Models\User;
+use App\Notifications\EvaluationSubmitted;
+use App\Notifications\EvidenceRevisionRequested;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -37,6 +40,7 @@ class ActivityEvidenceWorkflowTest extends TestCase
     public function test_admin_auditee_and_auditor_complete_the_evidence_review_and_reopen_flow(): void
     {
         Storage::fake('local');
+        Notification::fake();
         $this->createRoles();
         [$unit, $indicator, $cycle, $window, $activity] = $this->createEvaluationSetup();
         $auditee = $this->createUser('auditee', $unit, Jabatan::KoordinatorProdi);
@@ -113,6 +117,7 @@ class ActivityEvidenceWorkflowTest extends TestCase
                 'komentar' => 'Mohon unggah notulen yang sudah ditandatangani.',
             ])
             ->assertRedirect();
+        Notification::assertSentTo($auditee, EvidenceRevisionRequested::class);
         $this->assertDatabaseHas('evidence_reviews', [
             'evidence_id' => $evidence->id,
             'reviewer_id' => $auditor->id,
@@ -152,6 +157,7 @@ class ActivityEvidenceWorkflowTest extends TestCase
                 'submit' => '1',
             ])
             ->assertRedirect();
+        Notification::assertSentTo([$auditor], EvaluationSubmitted::class);
         $this->assertSame(SubmissionStatus::Submitted, $evaluation->fresh()->status);
         $this->assertSame('completed', $reopen->fresh()->status->value);
 

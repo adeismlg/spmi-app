@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Jabatan;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,14 +15,14 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'email', 'password', 'unit_id', 'jabatan'];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'google_id'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'jabatan' => \App\Enums\Jabatan::class,
+            'jabatan' => Jabatan::class,
         ];
     }
 

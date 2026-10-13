@@ -18,6 +18,21 @@
         <h4 class="fw-bold text-center mb-1" style="color:#5b3fc6">SPMI</h4>
         <p class="text-center text-muted mb-4">Sistem Penjaminan Mutu Internal — siklus PPEPP</p>
 
+        @error('google')
+            <div class="alert alert-danger" role="alert">{{ $message }}</div>
+        @enderror
+
+        @if (filled(config('services.google.client_id')) && filled(config('services.google.client_secret')) && filled(config('services.google.redirect')))
+            <a href="{{ route('auth.google.redirect') }}" class="btn btn-outline-secondary w-100 mb-3">
+                Lanjutkan dengan Google
+            </a>
+            <div class="text-center text-muted small mb-3">atau masuk dengan email dan password</div>
+        @else
+            <div class="alert alert-info small" role="status">
+                Login Google belum dikonfigurasi. Silakan masuk dengan email dan password.
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <div class="mb-3">

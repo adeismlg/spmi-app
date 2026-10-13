@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AuditChecklistController;
 use App\Http\Controllers\AuditController;
-use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CorrectiveActionController;
 use App\Http\Controllers\CycleController;
@@ -13,11 +13,12 @@ use App\Http\Controllers\EvidenceReviewController;
 use App\Http\Controllers\FindingController;
 use App\Http\Controllers\IndicatorController;
 use App\Http\Controllers\ManagementReviewController;
+use App\Http\Controllers\ReopenRequestController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SelfEvaluationController;
-use App\Http\Controllers\ReopenRequestController;
 use App\Http\Controllers\SemesterWindowController;
 use App\Http\Controllers\StandardController;
+use App\Http\Controllers\StandardEditionController;
 use App\Http\Controllers\StatementAssignmentController;
 use App\Http\Controllers\StatementController;
 use App\Http\Controllers\UnitController;
@@ -32,6 +33,8 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'show'])->name('login');
     Route::post('login', [LoginController::class, 'login']);
+    Route::get('auth/google/redirect', [LoginController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+    Route::get('auth/google/callback', [LoginController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 });
 
 Route::middleware('auth')->group(function () {
@@ -53,6 +56,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserController::class)->except('show');
         Route::resource('units', UnitController::class)->except('show');
         Route::resource('standards', StandardController::class)->except('show');
+        Route::resource('standard-editions', StandardEditionController::class)->except('show');
         Route::get('statements/{statement}/assignments', [StatementAssignmentController::class, 'edit'])->name('statements.assignments.edit');
         Route::put('statements/{statement}/assignments', [StatementAssignmentController::class, 'update'])->name('statements.assignments.update');
         Route::post('statements/{statement}/assignments/reset', [StatementAssignmentController::class, 'reset'])->name('statements.assignments.reset');

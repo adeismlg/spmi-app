@@ -104,6 +104,7 @@
             .dashboard-notice a { margin-left:1.9rem; }
         }
     </style>
+    @stack('styles')
 </head>
 <body>
 @php

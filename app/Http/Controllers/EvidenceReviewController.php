@@ -8,6 +8,7 @@ use App\Models\Audit;
 use App\Models\Evidence;
 use App\Models\EvidenceReview;
 use App\Services\SemesterWorkflow;
+use App\Services\WorkflowNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,8 +16,12 @@ use Illuminate\Validation\Rule;
 
 class EvidenceReviewController extends Controller
 {
-    public function update(Request $request, Evidence $evidence, SemesterWorkflow $workflow): RedirectResponse
-    {
+    public function update(
+        Request $request,
+        Evidence $evidence,
+        SemesterWorkflow $workflow,
+        WorkflowNotificationService $notifications,
+    ): RedirectResponse {
         $user = $request->user();
         $evaluation = $evidence->selfEvaluation()->with(['cycle', 'unit'])->firstOrFail();
 
@@ -61,6 +66,10 @@ class EvidenceReviewController extends Controller
                 $evaluation->update(['status' => SubmissionStatus::Verified]);
             }
         });
+
+        if ($data['status'] === EvidenceStatus::Revision->value) {
+            $notifications->notifyEvidenceRevision($evidence->fresh(), $data['komentar'] ?? null);
+        }
 
         return back()->with('success', 'Pemeriksaan bukti berhasil disimpan.');
     }

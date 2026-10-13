@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Enums\IndicatorType;
+use App\Models\AuditChecklist;
+use App\Models\Cycle;
 use App\Models\Indicator;
 use App\Models\IndicatorTarget;
+use App\Models\SelfEvaluation;
 use App\Models\Standard;
+use App\Models\StandardEdition;
 use App\Models\Statement;
 use App\Support\TargetParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class IndicatorController extends CrudController
 {
@@ -24,7 +30,7 @@ class IndicatorController extends CrudController
 
     protected function query(): Builder
     {
-        return Indicator::query()->with(['standard', 'statement', 'targets'])
+        return Indicator::query()->with(['standard.edition', 'statement', 'targets'])
             ->when(request('standard_id'), fn ($q, $id) => $q->where('indicators.standard_id', $id))
             ->join('standards', 'standards.id', '=', 'indicators.standard_id')
             ->orderBy('standards.nomor')->orderBy('indicators.kode')
@@ -34,20 +40,21 @@ class IndicatorController extends CrudController
     protected function filters(): array
     {
         return [
-            'standard_id' => ['label' => 'Standar', 'options' => Standard::orderBy('nomor')->get()
-                ->mapWithKeys(fn ($s) => [$s->id => "{$s->nomor}. {$s->nama}"])->all()],
+            'standard_id' => ['label' => 'Standar', 'options' => Standard::with('edition')->orderByDesc('standard_edition_id')->orderBy('nomor')->get()
+                ->mapWithKeys(fn ($s) => [$s->id => "{$s->edition?->kode} · {$s->nomor}. {$s->nama}"])->all()],
         ];
     }
 
     protected function columns(): array
     {
-        $tahun = (int) (\App\Models\Cycle::current()?->tahun ?? IndicatorTarget::TARGET_YEARS[0]);
+        $tahun = (int) (Cycle::current()?->tahun ?? IndicatorTarget::TARGET_YEARS[0]);
 
         return [
             ['label' => 'Kode', 'value' => fn ($r) => $r->kode],
+            ['label' => 'Edisi / Standar', 'value' => fn ($r) => ($r->standard?->edition?->kode ?? 'LEGACY').' · '.($r->standard?->kode ?? '-')],
             ['label' => 'Indikator', 'value' => fn ($r) => Str::limit($r->nama, 100)],
             ['label' => 'Jenis', 'value' => fn ($r) => $r->tipe->label()],
-            ['label' => 'Baseline '.IndicatorTarget::BASELINE_YEAR, 'value' => fn ($r) => $r->baseline()?->label($r->tipe) ?? '—'],
+            ['label' => 'Baseline', 'value' => fn ($r) => $r->baseline()?->label($r->tipe) ?? '—'],
             ['label' => "Target {$tahun}", 'value' => fn ($r) => $r->targetLabel($tahun)],
         ];
     }
@@ -64,11 +71,18 @@ class IndicatorController extends CrudController
 
     protected function fields(?Model $record = null): array
     {
+        [$baselineYear, $targetYears] = $this->targetPeriod($record);
+        $baselineLabel = $record || request('statement_id')
+            ? 'Baseline '.$baselineYear
+            : 'Baseline (tahun sebelum edisi)';
+        if (! $record && ! request('statement_id')) {
+            $targetYears = $this->availableTargetYears();
+        }
         $fields = [
             'statement_id' => ['label' => 'Pernyataan Standar', 'type' => 'select', 'default' => request('statement_id'),
-                'options' => Statement::with('standard')->join('standards', 'standards.id', '=', 'statements.standard_id')
+                'options' => Statement::with('standard.edition')->join('standards', 'standards.id', '=', 'statements.standard_id')
                     ->orderBy('standards.nomor')->orderBy('statements.nomor')->select('statements.*')->get()
-                    ->mapWithKeys(fn ($s) => [$s->id => ($s->nomor ?? '—').' — '.Str::limit($s->pernyataan ?? '', 70)])->all(),
+                    ->mapWithKeys(fn ($s) => [$s->id => "{$s->standard?->edition?->kode} · ".($s->nomor ?? '—').' — '.Str::limit($s->pernyataan ?? '', 70)])->all(),
                 'rules' => ['required', 'exists:statements,id']],
             'kode' => ['label' => 'Kode', 'help' => 'Umumnya sama dengan No Standar, mis. 1.01.',
                 'rules' => ['required', 'max:30',
@@ -81,12 +95,12 @@ class IndicatorController extends CrudController
                 'help' => 'Menentukan cara menghitung skor: persen/angka/rupiah = capaian ÷ target; ada = ya/tidak; kualitatif = skor manual.'],
             'bobot' => ['label' => 'Bobot', 'type' => 'number', 'default' => 1, 'rules' => 'required|numeric|min:0'],
             'catatan' => ['label' => 'Catatan Reviewer', 'type' => 'textarea', 'rules' => 'nullable|string'],
-            'baseline' => ['label' => 'Baseline '.IndicatorTarget::BASELINE_YEAR, 'virtual' => true, 'rules' => 'nullable|string|max:80',
-                'value' => fn ($r) => $r?->targetInput('baseline', IndicatorTarget::BASELINE_YEAR),
+            'baseline' => ['label' => $baselineLabel, 'virtual' => true, 'rules' => 'nullable|string|max:80',
+                'value' => fn ($r) => $r?->targetInput('baseline', $baselineYear),
                 'help' => 'Isi angka (80), dengan pembanding (>70), atau "ada". Untuk persen cukup tulis 80, bukan 0,8.'],
         ];
 
-        foreach (IndicatorTarget::TARGET_YEARS as $year) {
+        foreach ($targetYears as $year) {
             $fields["target_{$year}"] = [
                 'label' => "Target {$year}", 'virtual' => true, 'rules' => 'nullable|string|max:80',
                 'value' => fn ($r) => $r?->targetInput('target', $year),
@@ -96,9 +110,61 @@ class IndicatorController extends CrudController
         return $fields;
     }
 
+    /**
+     * @return array{0: int, 1: array<int, int>}
+     */
+    private function targetPeriod(?Model $record = null, ?Request $request = null): array
+    {
+        $statementId = $request?->input('statement_id') ?? request('statement_id');
+        $standardId = $statementId
+            ? Statement::find($statementId)?->standard_id
+            : $record?->standard_id;
+        $edition = $standardId
+            ? Standard::with('edition')->find($standardId)?->edition
+            : null;
+
+        if (! $edition || $edition->tahun_mulai <= 1900) {
+            return [IndicatorTarget::BASELINE_YEAR, IndicatorTarget::TARGET_YEARS];
+        }
+
+        $startYear = $edition->tahun_mulai;
+        $endYear = $edition->tahun_selesai ?? ($startYear + 4);
+
+        return [$startYear - 1, range($startYear, $endYear)];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function availableTargetYears(): array
+    {
+        $years = collect(IndicatorTarget::TARGET_YEARS);
+
+        foreach (StandardEdition::query()->where('tahun_mulai', '>', 1900)->get() as $edition) {
+            $endYear = $edition->tahun_selesai ?? ($edition->tahun_mulai + 4);
+            $years = $years->merge(range($edition->tahun_mulai, $endYear));
+        }
+
+        return $years->unique()->sort()->values()->all();
+    }
+
     protected function beforeSave(array $data, Request $request, ?Model $record): array
     {
         $statement = Statement::findOrFail($data['statement_id']);
+        $standard = Standard::with('edition')->findOrFail($statement->standard_id);
+        if ($standard->edition?->hasCycleData()) {
+            throw ValidationException::withMessages([
+                'statement_id' => 'Isi edisi yang sudah memiliki hasil evaluasi atau audit tidak dapat diubah. Buat edisi baru untuk revisi.',
+            ]);
+        }
+
+        if ($record && (SelfEvaluation::where('indicator_id', $record->id)->exists()
+            || AuditChecklist::where('indicator_id', $record->id)->exists())) {
+            throw ValidationException::withMessages([
+                'statement_id' => 'Indikator ini sudah digunakan dalam evaluasi atau audit dan tidak dapat diubah.',
+            ]);
+        }
+
         $data['standard_id'] = $statement->standard_id;
         $data['satuan'] = IndicatorType::from($data['tipe'])->unit();
 
@@ -109,8 +175,9 @@ class IndicatorController extends CrudController
     {
         $tipe = $record->tipe;
 
-        $inputs = ['baseline' => [IndicatorTarget::BASELINE_YEAR => $request->input('baseline')]];
-        foreach (IndicatorTarget::TARGET_YEARS as $year) {
+        [$baselineYear, $targetYears] = $this->targetPeriod($record, $request);
+        $inputs = ['baseline' => [$baselineYear => $request->input('baseline')]];
+        foreach ($targetYears as $year) {
             $inputs['target'][$year] = $request->input("target_{$year}");
         }
 
@@ -124,5 +191,19 @@ class IndicatorController extends CrudController
                     : IndicatorTarget::updateOrCreate($key, $parsed);
             }
         }
+    }
+
+    public function destroy(string $id): RedirectResponse
+    {
+        $indicator = Indicator::findOrFail($id);
+        if ($indicator->standard?->edition?->hasCycleData()) {
+            return back()->with('error', 'Indikator pada edisi yang sudah memiliki evaluasi atau audit tidak dapat dihapus.');
+        }
+
+        if ($indicator->selfEvaluations()->exists() || $indicator->checklists()->exists()) {
+            return back()->with('error', 'Indikator ini sudah digunakan dalam evaluasi atau audit dan tidak dapat dihapus.');
+        }
+
+        return parent::destroy($id);
     }
 }

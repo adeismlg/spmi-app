@@ -14,6 +14,7 @@ use App\Models\SelfEvaluation;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\OpenFindingService;
+use App\Services\WorkflowNotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -23,6 +24,8 @@ use Illuminate\View\View;
 class AuditController extends CrudController
 {
     use LimitsToUser;
+
+    private ?array $previousAuditState = null;
 
     protected string $model = Audit::class;
 
@@ -106,6 +109,7 @@ class AuditController extends CrudController
 
     protected function afterSave(Model $record, Request $request): void
     {
+        $isNew = $record->wasRecentlyCreated;
         $sync = [];
         foreach ((array) $request->input('auditors', []) as $id) {
             $sync[$id] = ['peran' => 'anggota'];
@@ -114,6 +118,42 @@ class AuditController extends CrudController
             $sync[$ketua] = ['peran' => 'ketua'];
         }
         $record->auditors()->sync($sync);
+
+        $record->refresh()->load('auditors');
+        $currentState = [
+            'cycle_id' => $record->cycle_id,
+            'unit_id' => $record->unit_id,
+            'semester' => $record->semester->value,
+            'tanggal_desk_evaluation' => $record->tanggal_desk_evaluation?->toDateString(),
+            'tanggal_visitasi' => $record->tanggal_visitasi?->toDateString(),
+            'status' => $record->status->value,
+            'auditor_ids' => $record->auditors->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all(),
+        ];
+
+        if ($isNew || $this->previousAuditState !== $currentState) {
+            app(WorkflowNotificationService::class)->notifyAuditSchedule(
+                $record,
+                $isNew,
+                $this->previousAuditState['auditor_ids'] ?? [],
+            );
+        }
+    }
+
+    protected function beforeSave(array $data, Request $request, ?Model $record): array
+    {
+        $this->previousAuditState = $record
+            ? [
+                'cycle_id' => $record->cycle_id,
+                'unit_id' => $record->unit_id,
+                'semester' => $record->semester->value,
+                'tanggal_desk_evaluation' => $record->tanggal_desk_evaluation?->toDateString(),
+                'tanggal_visitasi' => $record->tanggal_visitasi?->toDateString(),
+                'status' => $record->status->value,
+                'auditor_ids' => $record->auditors()->pluck('users.id')->map(fn ($id) => (int) $id)->sort()->values()->all(),
+            ]
+            : null;
+
+        return $data;
     }
 
     /** Halaman daftar tilik. */

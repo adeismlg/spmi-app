@@ -16,7 +16,7 @@
                 <span class="dashboard-date">{{ now()->locale('id')->translatedFormat('l, j F Y') }}</span>
                 <h2>Hai, {{ auth()->user()->name }}!</h2>
                 <span class="dashboard-role">{{ auth()->user()->jabatan?->label() ?? auth()->user()->getRoleNames()->first() }}</span>
-                <p>Ringkasan mutu · Siklus PPEPP {{ $cycle->tahun }}</p>
+                <p>Ringkasan mutu · Siklus PPEPP {{ $cycle->tahun }} · {{ $cycle->standardEdition?->nama ?? 'Edisi legacy' }}</p>
             </div>
         </div>
         <div class="dashboard-stage" role="status" aria-label="Tahap PPEPP saat ini">

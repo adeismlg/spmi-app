@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Enums\Jabatan;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\WorkflowNotificationService;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserController extends CrudController
 {
+    public function __construct(private WorkflowNotificationService $notifications) {}
+
     protected string $model = User::class;
 
     protected string $routeName = 'users';
@@ -64,9 +68,13 @@ class UserController extends CrudController
     protected function afterSave(Model $record, Request $request): void
     {
         $record->syncRoles([$request->input('role')]);
+
+        if ($record->wasRecentlyCreated) {
+            $this->notifications->notifyUserAccountCreated($record);
+        }
     }
 
-    public function destroy(string $id): \Illuminate\Http\RedirectResponse
+    public function destroy(string $id): RedirectResponse
     {
         abort_if((int) $id === auth()->id(), 422, 'Tidak dapat menghapus akun sendiri.');
 

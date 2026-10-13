@@ -3,15 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Enums\EvaluationPeriod;
-use App\Enums\IndicatorType;
 use App\Enums\StandardCategory;
 use App\Enums\StandardGroup;
 use App\Enums\StatementStatus;
+use App\Models\Cycle;
 use App\Models\Indicator;
 use App\Models\IndicatorTarget;
 use App\Models\Standard;
-use App\Models\Unit;
+use App\Models\StandardEdition;
 use App\Models\Statement;
+use App\Models\Unit;
 use App\Services\AssignmentService;
 use App\Support\PicNormalizer;
 use App\Support\StatementTextParser;
@@ -29,7 +30,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class ImportStandards extends Command
 {
-    protected $signature = 'spmi:import-standards {file? : Path file .xlsx} {--dry-run : Hitung & tampilkan ringkasan tanpa menyimpan}';
+    protected $signature = 'spmi:import-standards {file? : Path file .xlsx} {--edition= : Kode edisi standar (default edisi siklus aktif)} {--dry-run : Hitung & tampilkan ringkasan tanpa menyimpan}';
 
     protected $description = 'Impor standar, pernyataan, indikator, dan target dari dokumen Excel SPMI';
 
@@ -46,6 +47,26 @@ class ImportStandards extends Command
 
         if (! is_file($path)) {
             $this->error("File tidak ditemukan: {$path}");
+
+            return self::FAILURE;
+        }
+
+        $editionCode = $this->option('edition') ?: Cycle::current()?->standardEdition?->kode;
+        $edition = $editionCode ? StandardEdition::where('kode', $editionCode)->first() : null;
+        if (! $edition) {
+            $this->error('Edisi standar tidak ditemukan. Buat edisi dan pilih --edition=KODE, atau tetapkan edisi pada siklus aktif.');
+
+            return self::FAILURE;
+        }
+
+        if ($edition->kode === 'LEGACY') {
+            $this->error('Edisi LEGACY dipertahankan untuk data terdahulu. Buat edisi bertahun tersendiri sebelum mengimpor workbook.');
+
+            return self::FAILURE;
+        }
+
+        if ($edition->hasCycleData()) {
+            $this->error('Edisi sudah memiliki hasil evaluasi atau audit dan tidak dapat ditimpa. Buat edisi baru untuk mengimpor revisi.');
 
             return self::FAILURE;
         }
@@ -76,8 +97,9 @@ class ImportStandards extends Command
             $standards = [];
             foreach ($names as $prefix => $name) {
                 $standards[$prefix] = Standard::updateOrCreate(
-                    ['nomor' => $prefix],
+                    ['standard_edition_id' => $edition->id, 'nomor' => $prefix],
                     [
+                        'standard_edition_id' => $edition->id,
                         'kode' => sprintf('S%02d', $prefix),
                         'nama' => $name,
                         'kategori' => StandardCategory::SnDikti,
@@ -198,6 +220,7 @@ class ImportStandards extends Command
         }
 
         $this->info(($this->option('dry-run') ? '[DRY-RUN] ' : '')."Standar: {$count['standard']} · Pernyataan: {$count['statement']} · Indikator: {$count['indicator']} · Nilai target: {$count['target']}");
+        $this->line("Edisi standar: {$edition->label}");
         $this->line('Jenis indikator terdeteksi: '.collect($types)->map(fn ($v, $k) => "{$k}={$v}")->implode(', '));
 
         $this->line("Penugasan otomatis: {$assigned['penugasan']} (pernyataan × unit). ".

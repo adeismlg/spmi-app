@@ -8,6 +8,7 @@
     <li class="menu-header">Penetapan</li>
     <li class="nav-item"><a class="nav-link {{ $on('documents.*') }}" href="{{ route('documents.index') }}"><i class="bi bi-folder2-open"></i> Dokumen Mutu</a></li>
     @role('admin_spmi')
+        <li class="nav-item"><a class="nav-link {{ $on('standard-editions.*') }}" href="{{ route('standard-editions.index') }}"><i class="bi bi-journals"></i> Edisi Standar</a></li>
         <li class="nav-item"><a class="nav-link {{ $on('standards.*') }}" href="{{ route('standards.index') }}"><i class="bi bi-journal-check"></i> Standar Mutu</a></li>
         <li class="nav-item"><a class="nav-link {{ $on('statements.*') }}" href="{{ route('statements.index') }}"><i class="bi bi-card-text"></i> Pernyataan Standar</a></li>
         <li class="nav-item"><a class="nav-link {{ $on('indicators.*') }}" href="{{ route('indicators.index') }}"><i class="bi bi-bullseye"></i> Indikator & Target</a></li>

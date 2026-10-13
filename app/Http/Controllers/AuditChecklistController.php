@@ -36,7 +36,8 @@ class AuditChecklistController extends Controller
         // Include indicators currently due as well as unresolved findings carried forward.
         $assigned = Indicator::with('statement')
             ->whereHas('statement.assignments', fn ($q) => $q->where('unit_id', $audit->unit_id))
-            ->whereHas('standard', fn ($q) => $q->where('is_active', true))
+            ->whereHas('standard', fn ($q) => $q->where('is_active', true)
+                ->when($audit->cycle->standard_edition_id, fn ($q, $editionId) => $q->where('standard_edition_id', $editionId)))
             ->get();
         $dueIds = $assigned->filter(fn ($indicator) => in_array(
             $audit->semester->value,

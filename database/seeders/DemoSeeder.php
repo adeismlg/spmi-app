@@ -41,7 +41,7 @@ class DemoSeeder extends Seeder
         // Impor standar -> pernyataan -> indikator -> target -> penugasan otomatis.
         $file = database_path('data/spmi-polinema-2026.xlsx');
         if (is_file($file)) {
-            Artisan::call('spmi:import-standards', ['file' => $file]);
+            Artisan::call('spmi:import-standards', ['file' => $file, '--edition' => 'SPMI-'.date('Y')]);
             $this->command?->info(trim(Artisan::output()));
         } else {
             $this->command?->warn('File standar tidak ditemukan; jalankan spmi:import-standards secara manual.');
@@ -72,5 +72,7 @@ class DemoSeeder extends Seeder
             );
             $user->syncRoles([$role]);
         }
+
+        $this->call(DemoWorkflowSeeder::class);
     }
 }

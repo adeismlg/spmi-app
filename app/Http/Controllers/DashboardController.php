@@ -13,7 +13,7 @@ class DashboardController extends Controller
     public function __invoke(Request $request, DashboardService $service): View
     {
         $user = $request->user();
-        $cycles = Cycle::orderByDesc('tahun')->get();
+        $cycles = Cycle::with('standardEdition')->orderByDesc('tahun')->get();
         $cycle = $request->filled('cycle_id') ? $cycles->firstWhere('id', $request->integer('cycle_id')) : (Cycle::current() ?? $cycles->first());
 
         // Admin/pimpinan/auditor boleh memfilter unit; auditee dikunci ke unitnya.

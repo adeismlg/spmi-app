@@ -7,6 +7,7 @@ use App\Enums\StandardGroup;
 use App\Enums\UnitType;
 use App\Models\Cycle;
 use App\Models\Standard;
+use App\Models\StandardEdition;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -58,10 +59,22 @@ class SpmiSeeder extends Seeder
         );
         $admin->assignRole('admin_spmi');
 
+        $year = (int) date('Y');
+        $edition = StandardEdition::firstOrCreate(
+            ['kode' => 'SPMI-'.$year],
+            [
+                'nama' => 'Standar SPMI '.$year,
+                'tahun_mulai' => $year,
+                'tahun_selesai' => $year + 4,
+                'deskripsi' => 'Edisi standar yang digunakan untuk siklus '.$year.'.',
+            ],
+        );
+
         foreach (self::STANDARDS as $nomor => $nama) {
-            Standard::updateOrCreate(
-                ['nomor' => $nomor],
+            Standard::firstOrCreate(
+                ['standard_edition_id' => $edition->id, 'nomor' => $nomor],
                 [
+                    'standard_edition_id' => $edition->id,
                     'kode' => sprintf('S%02d', $nomor),
                     'nama' => $nama,
                     'kategori' => StandardCategory::SnDikti,
@@ -73,7 +86,7 @@ class SpmiSeeder extends Seeder
 
         Cycle::firstOrCreate(
             ['tahun' => (int) date('Y')],
-            ['nama' => 'Siklus SPMI '.date('Y'), 'is_active' => true],
+            ['standard_edition_id' => $edition->id, 'nama' => 'Siklus SPMI '.date('Y'), 'is_active' => true],
         );
     }
 }

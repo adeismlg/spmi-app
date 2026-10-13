@@ -11,9 +11,11 @@ use App\Models\Statement;
 use App\Services\AssignmentService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /** Pernyataan Standar: satu baris pada dokumen standar (nomor, pernyataan ABCD, PIC baku, periode, referensi). */
 class StatementController extends CrudController
@@ -26,7 +28,7 @@ class StatementController extends CrudController
 
     protected function query(): Builder
     {
-        return Statement::query()->with('standard')
+        return Statement::query()->with('standard.edition')
             ->when(request('standard_id'), fn ($q, $id) => $q->where('statements.standard_id', $id))
             ->when(request('status'), fn ($q, $s) => $q->where('statements.status', $s))
             ->when(request('penugasan') === 'kosong', fn ($q) => $q->whereDoesntHave('assignments')
@@ -40,8 +42,8 @@ class StatementController extends CrudController
     protected function filters(): array
     {
         return [
-            'standard_id' => ['label' => 'Standar', 'options' => Standard::orderBy('nomor')->get()
-                ->mapWithKeys(fn ($s) => [$s->id => "{$s->nomor}. {$s->nama}"])->all()],
+            'standard_id' => ['label' => 'Standar', 'options' => Standard::with('edition')->orderByDesc('standard_edition_id')->orderBy('nomor')->get()
+                ->mapWithKeys(fn ($s) => [$s->id => "{$s->edition?->kode} · {$s->nomor}. {$s->nama}"])->all()],
             'status' => ['label' => 'Status', 'options' => $this->enumOptions(StatementStatus::class)],
             'penugasan' => ['label' => 'Penugasan', 'options' => ['kosong' => 'Belum ditugaskan ke unit mana pun']],
         ];
@@ -51,6 +53,7 @@ class StatementController extends CrudController
     {
         return [
             ['label' => 'No', 'value' => fn ($r) => $r->nomor ?? '-'],
+            ['label' => 'Edisi / Standar', 'value' => fn ($r) => ($r->standard?->edition?->kode ?? 'LEGACY').' · '.($r->standard?->kode ?? '-')],
             ['label' => 'Pernyataan', 'value' => fn ($r) => Str::limit($r->pernyataan ?? '-', 90)],
             ['label' => 'PIC', 'value' => fn ($r) => $r->picLabel()],
             ['label' => 'Periode', 'value' => fn ($r) => $r->periode_evaluasi?->label() ?? '-'],
@@ -76,7 +79,8 @@ class StatementController extends CrudController
     {
         return [
             'standard_id' => ['label' => 'Standar', 'type' => 'select', 'default' => request('standard_id'),
-                'options' => Standard::orderBy('nomor')->get()->mapWithKeys(fn ($s) => [$s->id => "{$s->nomor}. {$s->nama}"])->all(),
+                'options' => Standard::with('edition')->orderByDesc('standard_edition_id')->orderBy('nomor')->get()
+                    ->mapWithKeys(fn ($s) => [$s->id => "{$s->edition?->kode} · {$s->nomor}. {$s->nama}"])->all(),
                 'rules' => ['required', 'exists:standards,id']],
             'nomor' => ['label' => 'No Standar', 'help' => 'Contoh: 1.01',
                 'rules' => ['nullable', 'regex:/^\d{1,2}\.\d{2}$/',
@@ -106,6 +110,24 @@ class StatementController extends CrudController
         ];
     }
 
+    public function destroy(string $id): RedirectResponse
+    {
+        $statement = Statement::findOrFail($id);
+        if ($statement->standard?->edition?->hasCycleData()) {
+            return back()->with('error', 'Pernyataan pada edisi yang sudah memiliki evaluasi atau audit tidak dapat dihapus.');
+        }
+
+        $hasHistoricalData = $statement->indicators()->where(function ($query) {
+            $query->whereHas('selfEvaluations')->orWhereHas('checklists');
+        })->exists();
+
+        if ($hasHistoricalData) {
+            return back()->with('error', 'Pernyataan ini sudah digunakan dalam evaluasi atau audit dan tidak dapat dihapus.');
+        }
+
+        return parent::destroy($id);
+    }
+
     protected function extraRules(?Model $record): array
     {
         return [
@@ -116,6 +138,21 @@ class StatementController extends CrudController
 
     protected function beforeSave(array $data, Request $request, ?Model $record): array
     {
+        $standard = Standard::findOrFail($data['standard_id']);
+        if ($standard->edition?->hasCycleData()) {
+            throw ValidationException::withMessages([
+                'standard_id' => 'Isi edisi yang sudah memiliki hasil evaluasi atau audit tidak dapat diubah. Buat edisi baru untuk revisi.',
+            ]);
+        }
+
+        if ($record && $record->indicators()->where(function ($query) {
+            $query->whereHas('selfEvaluations')->orWhereHas('checklists');
+        })->exists()) {
+            throw ValidationException::withMessages([
+                'standard_id' => 'Pernyataan ini sudah digunakan dalam evaluasi atau audit dan tidak dapat diubah.',
+            ]);
+        }
+
         $units = array_values(array_filter(array_map('trim', explode(',', (string) ($data['pic_unit'] ?? '')))));
 
         $data['pic_unit'] = $units ?: null;
