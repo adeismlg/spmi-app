@@ -46,7 +46,7 @@ return [
         ['pattern' => '/\bspi\b|satuan pengawas internal/iu', 'jabatan' => 'ketua_unit', 'unit' => 'SPI'],
         ['pattern' => '/\bpoliklinik\b/iu', 'jabatan' => 'ketua_unit', 'unit' => 'Poliklinik'],
         ['pattern' => '/\bbaak\b/iu', 'jabatan' => 'ketua_unit', 'unit' => 'BAAK'],
-        ['pattern' => '/kepala laboratorium|kepala lab\b|ka\.?\s*lab/iu', 'jabatan' => 'ketua_unit', 'unit' => 'Laboratorium', 'pasti' => false, 'catatan' => 'Kepala Laboratorium dipetakan ke Ketua Unit "Laboratorium"'],
+        ['pattern' => '/kepala laboratorium|kepala lab\b|ka\.?\s*lab/iu', 'jabatan' => 'ketua_unit', 'unit' => 'Laboratorium', 'unit_type' => 'laboratorium', 'pasti' => false, 'catatan' => 'Kepala Laboratorium dipetakan ke Ketua Unit "Laboratorium"'],
     ],
 
     // Hanya dipakai bila PIC berisi Koordinator Program Studi.

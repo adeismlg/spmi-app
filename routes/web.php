@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AuditChecklistController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AuditReportingController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CorrectiveActionController;
 use App\Http\Controllers\CycleController;
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('documents/{id}/download', [DocumentController::class, 'download'])->whereNumber('id')->name('documents.download');
     Route::get('findings', [FindingController::class, 'index'])->name('findings.index');
+    Route::get('audit-reporting', [AuditReportingController::class, 'index'])->name('audits.reporting');
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/download', [ReportController::class, 'download'])->name('reports.download');
     Route::get('corrective-actions', [CorrectiveActionController::class, 'index'])->name('corrective-actions.index');

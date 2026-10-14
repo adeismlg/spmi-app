@@ -23,6 +23,7 @@
     <li class="menu-header">Evaluasi</li>
     @hasanyrole('admin_spmi|auditor|pimpinan')
         <li class="nav-item"><a class="nav-link {{ $on('audits.*') }}" href="{{ route('audits.index') }}"><i class="bi bi-search"></i> Audit Mutu Internal</a></li>
+        <li class="nav-item"><a class="nav-link {{ $on('audits.reporting') }}" href="{{ route('audits.reporting') }}"><i class="bi bi-graph-up"></i> Laporan Audit (Lab & Prodi)</a></li>
     @endhasanyrole
     <li class="nav-item"><a class="nav-link {{ $on('findings.*') }}" href="{{ route('findings.index') }}"><i class="bi bi-exclamation-triangle"></i> Temuan</a></li>
 
