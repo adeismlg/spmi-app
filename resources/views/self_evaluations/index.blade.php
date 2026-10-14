@@ -88,12 +88,12 @@
                 <table class="table align-middle mb-0 evaluation-table">
                     <thead>
                     <tr>
-                        <th style="width:28%">Indikator</th>
-                        <th style="width:15%">Baseline → Target</th>
-                        <th style="width:13%">Capaian</th>
+                        <th style="width:20%">Indikator</th>
+                        <th style="width:13%">Baseline → Target</th>
+                        <th style="width:12%">Capaian</th>
                         <th style="width:10%">Skor</th>
-                        <th style="width:19%">Uraian</th>
-                        <th style="width:8%">Bukti</th>
+                        <th style="width:28%">Uraian</th>
+                        <th style="width:10%">Bukti</th>
                         <th style="width:7%">Status</th>
                     </tr>
                     </thead>
@@ -158,15 +158,15 @@
                                 @endif
                             </td>
                             <td data-label="Uraian">
-                                <textarea rows="2" class="form-control form-control-sm" name="items[{{ $ind->id }}][uraian]" @disabled(! $rowEditable)>{{ old("items.$ind->id.uraian", $e?->uraian) }}</textarea>
+                                <textarea rows="4" class="form-control form-control-sm" name="items[{{ $ind->id }}][uraian]" placeholder="Jelaskan hasil pencapaian dan bukti pendukungnya..." @disabled(! $rowEditable)>{{ old("items.$ind->id.uraian", $e?->uraian) }}</textarea>
                             </td>
                             <td class="text-nowrap" data-label="Bukti">
                                 @if ($e)
-                                    <a href="{{ route('self-evaluations.show', $e->id) }}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-paperclip"></i> {{ $e->evidences_count ?? $e->evidences()->count() }}
+                                    <a href="{{ route('self-evaluations.show', $e->id) }}" class="btn btn-sm btn-outline-primary" title="Lihat dan upload bukti">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> {{ $e->evidences_count ?? $e->evidences()->count() }} bukti
                                     </a>
                                 @else
-                                    <span class="small text-muted">simpan dulu</span>
+                                    <span class="badge bg-light text-muted">Simpan terlebih dahulu</span>
                                 @endif
                             </td>
                             <td data-label="Status">
