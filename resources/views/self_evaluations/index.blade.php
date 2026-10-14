@@ -11,8 +11,25 @@
     .evaluation-table th,
     .evaluation-table td { min-width: 0; overflow-wrap: anywhere; }
     .evaluation-table .form-control,
-    .evaluation-table .form-select,
-    .evaluation-table .input-group { width: 100%; min-width: 0; }
+    .evaluation-table .form-select { width: 100%; min-width: 0; }
+    .evaluation-table .input-group {
+        width: 100%;
+        min-width: 0;
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+    }
+    .evaluation-table .input-group-text {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: transparent;
+        border: none;
+        color: #666;
+    }
+    .evaluation-table .input-group .form-control {
+        min-width: 0;
+        flex: 1;
+    }
 
     @media (max-width: 767.98px) {
         .evaluation-table-shell { overflow: visible; }

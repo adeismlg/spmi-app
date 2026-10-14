@@ -88,6 +88,23 @@ class SelfEvaluationController extends Controller
         $evals = SelfEvaluation::where('cycle_id', $cycle->id)->where('unit_id', $unitId)
             ->where('semester', $semester)->withCount('evidences')->get()->keyBy('indicator_id');
 
+        // Auto-create missing evaluation records to allow evidence upload on all indicators
+        foreach ($indicators as $indicator) {
+            if (! $evals->has($indicator->id)) {
+                SelfEvaluation::create([
+                    'cycle_id' => $cycle->id,
+                    'unit_id' => $unitId,
+                    'indicator_id' => $indicator->id,
+                    'semester' => $semester,
+                    'status' => SubmissionStatus::Draft,
+                ]);
+            }
+        }
+
+        // Reload evaluations to include newly created ones
+        $evals = SelfEvaluation::where('cycle_id', $cycle->id)->where('unit_id', $unitId)
+            ->where('semester', $semester)->withCount('evidences')->get()->keyBy('indicator_id');
+
         return view('self_evaluations.index', [
             'cycle' => $cycle,
             'unit' => Unit::findOrFail($unitId),
