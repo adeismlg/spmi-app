@@ -20,9 +20,13 @@ class SemesterWorkflow
     {
         $window = $this->window($cycle, $semester);
 
+        if ($window === null || !$this->contains(now(), $window->pengisian_mulai, $window->pengisian_selesai)) {
+            return false;
+        }
+
+        // Allow submission during both Pelaksanaan and Evaluasi stages
         return $cycle->isStageOpen(CycleStage::Pelaksanaan)
-            && $window !== null
-            && $this->contains(now(), $window->pengisian_mulai, $window->pengisian_selesai);
+            || $cycle->isStageOpen(CycleStage::Evaluasi);
     }
 
     public function reviewOpen(Cycle $cycle, int $semester): bool
