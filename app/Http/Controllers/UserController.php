@@ -80,4 +80,18 @@ class UserController extends CrudController
 
         return parent::destroy($id);
     }
+
+    protected function rowActions(): array
+    {
+        return auth()->user()->hasRole('admin_spmi') ? [
+            [
+                'label' => '<i class="bi bi-person-check"></i> Masquerade',
+                'route' => fn ($user) => route('users.impersonate', $user->id),
+                'method' => 'post',
+                'visible' => fn ($user) => $user->canBeImpersonated(),
+                'class' => 'btn-warning btn-sm',
+                'confirm' => 'Login sebagai '.$user->name.'?',
+            ],
+        ] : [];
+    }
 }

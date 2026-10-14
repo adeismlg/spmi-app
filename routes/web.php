@@ -12,6 +12,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EvidenceController;
 use App\Http\Controllers\EvidenceReviewController;
 use App\Http\Controllers\FindingController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\IndicatorController;
 use App\Http\Controllers\ManagementReviewController;
 use App\Http\Controllers\ReopenRequestController;
@@ -56,6 +57,11 @@ Route::middleware('auth')->group(function () {
     /* ---------- Admin SPMI: master data & pengaturan siklus ---------- */
     Route::middleware('role:admin_spmi')->group(function () {
         Route::resource('users', UserController::class)->except('show');
+
+        // Impersonation routes (only admin)
+        Route::post('users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->whereNumber('user')->name('users.impersonate');
+        Route::post('impersonate/stop', [ImpersonationController::class, 'stopImpersonating'])->name('impersonate.stop');
+
         Route::resource('units', UnitController::class)->except('show');
         Route::resource('standards', StandardController::class)->except('show');
         Route::resource('standard-editions', StandardEditionController::class)->except('show');

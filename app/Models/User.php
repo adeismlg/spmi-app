@@ -36,4 +36,11 @@ class User extends Authenticatable
     {
         return $this->hasAnyRole(['admin_spmi', 'pimpinan']);
     }
+
+    /** Check if user can be impersonated */
+    public function canBeImpersonated(): bool
+    {
+        // Cannot impersonate admin_spmi or users without email
+        return ! $this->hasRole('admin_spmi') && ! is_null($this->email);
+    }
 }

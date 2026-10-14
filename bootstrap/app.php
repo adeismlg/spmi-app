@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\DetectImpersonation;
 use App\Http\Middleware\EnsureStageOpen;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,8 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Tambahkan baris ini untuk mempercayai proxy Cloudflare
         $middleware->trustProxies(at: '*');
+
+        // Register impersonation detection middleware globally
+        $middleware->append(DetectImpersonation::class);
     })
-    
+
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => RoleMiddleware::class,
