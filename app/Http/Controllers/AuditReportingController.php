@@ -32,8 +32,8 @@ class AuditReportingController extends Controller
             'cycle' => $cycle,
             'units' => $canFilterUnit ? $filterableUnits : collect(),
             'unitId' => $unitId,
-            'audits' => $auditData['academic'],
-            'labs' => $auditData['laboratory'],
+            'audits' => collect($auditData['academic']),
+            'labs' => collect($auditData['laboratory']),
             'summary' => $auditData['summary'],
         ]);
     }

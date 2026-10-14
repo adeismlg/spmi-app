@@ -153,8 +153,8 @@
                                     @foreach ($audits as $audit)
                                         <tr>
                                             <td class="ps-3">
-                                                <div class="fw-semibold">{{ $audit['unit_nama'] }}</div>
-                                                <small class="text-muted">{{ $audit['unit_kode'] }}</small>
+                                                <div class="fw-semibold">{{ $audit->unit_nama }}</div>
+                                                <small class="text-muted">{{ $audit->unit_kode }}</small>
                                             </td>
                                             <td>
                                                 @php
@@ -165,37 +165,37 @@
                                                         'dibatalkan' => 'danger',
                                                     ];
                                                 @endphp
-                                                <span class="badge bg-{{ $statusColors[$audit['status']] ?? 'secondary' }}">
-                                                    {{ ucfirst($audit['status']) }}
+                                                <span class="badge bg-{{ $statusColors[$audit->status] ?? 'secondary' }}">
+                                                    {{ ucfirst($audit->status) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                @if ($audit['semester'])
-                                                    <small class="badge bg-light text-dark">Semester {{ $audit['semester'] }}</small>
+                                                @if ($audit->semester)
+                                                    <small class="badge bg-light text-dark">Semester {{ $audit->semester }}</small>
                                                 @else
                                                     <small class="text-muted">-</small>
                                                 @endif
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex align-items-center justify-content-center gap-2">
-                                                    <small class="fw-semibold">{{ $audit['compliance_pct'] }}%</small>
+                                                    <small class="fw-semibold">{{ $audit->compliance_pct }}%</small>
                                                     <div class="progress" style="width: 80px; height: 4px;">
                                                         <div class="progress-bar" role="progressbar" 
-                                                            style="width: {{ min($audit['compliance_pct'], 100) }}%; background-color: {{ $audit['compliance_pct'] >= 80 ? '#28a745' : ($audit['compliance_pct'] >= 60 ? '#ffc107' : '#dc3545') }};"
+                                                            style="width: {{ min($audit->compliance_pct, 100) }}%; background-color: {{ $audit->compliance_pct >= 80 ? '#28a745' : ($audit->compliance_pct >= 60 ? '#ffc107' : '#dc3545') }};"
                                                         ></div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-warning">{{ $audit['total_findings'] }}</span>
+                                                <span class="badge bg-warning">{{ $audit->total_findings }}</span>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-info">{{ $audit['rtl_pct_resolved'] }}%</span>
+                                                <span class="badge bg-info">{{ $audit->rtl_pct_resolved }}%</span>
                                                 <br>
-                                                <small class="text-muted">{{ $audit['rtl_selesai'] + $audit['rtl_terverifikasi'] }}/{{ $audit['total_rtl'] }}</small>
+                                                <small class="text-muted">{{ $audit->rtl_selesai + $audit->rtl_terverifikasi }}/{{ $audit->total_rtl }}</small>
                                             </td>
                                             <td class="text-end pe-3">
-                                                <a href="{{ route('audits.show', $audit['id']) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('audits.show', $audit->id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
@@ -242,8 +242,8 @@
                                     @foreach ($labs as $lab)
                                         <tr>
                                             <td class="ps-3">
-                                                <div class="fw-semibold">{{ $lab['unit_nama'] }}</div>
-                                                <small class="text-muted">{{ $lab['unit_kode'] }}</small>
+                                                <div class="fw-semibold">{{ $lab->unit_nama }}</div>
+                                                <small class="text-muted">{{ $lab->unit_kode }}</small>
                                             </td>
                                             <td>
                                                 @php
@@ -254,36 +254,36 @@
                                                         'dibatalkan' => 'danger',
                                                     ];
                                                 @endphp
-                                                <span class="badge bg-{{ $statusColors[$lab['status']] ?? 'secondary' }}">
-                                                    {{ ucfirst($lab['status']) }}
+                                                <span class="badge bg-{{ $statusColors[$lab->status] ?? 'secondary' }}">
+                                                    {{ ucfirst($lab->status) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                @if ($lab['semester'])
-                                                    <small class="badge bg-light text-dark">Semester {{ $lab['semester'] }}</small>
+                                                @if ($lab->semester)
+                                                    <small class="badge bg-light text-dark">Semester {{ $lab->semester }}</small>
                                                 @else
                                                     <small class="text-muted">-</small>
                                                 @endif
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex align-items-center justify-content-center gap-2">
-                                                    <small class="fw-semibold">{{ $lab['compliance_pct'] }}%</small>
+                                                    <small class="fw-semibold">{{ $lab->compliance_pct }}%</small>
                                                     <div class="progress" style="width: 80px; height: 4px;">
                                                         <div class="progress-bar" role="progressbar" 
-                                                            style="width: {{ min($lab['compliance_pct'], 100) }}%; background-color: {{ $lab['compliance_pct'] >= 80 ? '#28a745' : ($lab['compliance_pct'] >= 60 ? '#ffc107' : '#dc3545') }};"
+                                                            style="width: {{ min($lab->compliance_pct, 100) }}%; background-color: {{ $lab->compliance_pct >= 80 ? '#28a745' : ($lab->compliance_pct >= 60 ? '#ffc107' : '#dc3545') }};"
                                                         ></div>
                                                     </div>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-warning">{{ $lab['total_findings'] }}</span>
+                                                <span class="badge bg-warning">{{ $lab->total_findings }}</span>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-info">{{ $lab['rtl_pct_resolved'] }}%</span>
+                                                <span class="badge bg-info">{{ $lab->rtl_pct_resolved }}%</span>
                                                 <br>
-                                                <small class="text-muted">{{ $lab['rtl_selesai'] + $lab['rtl_terverifikasi'] }}/{{ $lab['total_rtl'] }}</small>
+                                                <small class="text-muted">{{ $lab->rtl_selesai + $lab->rtl_terverifikasi }}/{{ $lab->total_rtl }}</small>
                                             </td>
                                             <td class="text-end pe-3">
-                                                <a href="{{ route('audits.show', $lab['id']) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('audits.show', $lab->id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
