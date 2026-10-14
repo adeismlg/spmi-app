@@ -31,43 +31,91 @@ class EvidenceController extends Controller
             'Pengisian terkunci atau periode pengisian sudah ditutup.',
         );
 
+        // Support both single and batch uploads
         $data = $request->validate([
-            'judul' => 'required|string|max:255',
-            'berkas' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|max:10240|required_without:url',
-            'url' => 'nullable|url|max:2048|required_without:berkas',
-            'replaces_evidence_id' => 'nullable|integer|exists:evidences,id',
+            // Single file upload (legacy)
+            'judul' => 'nullable|string|max:255',
+            'document_type' => 'nullable|string|max:50',
+            'keterangan' => 'nullable|string|max:1000',
+            'berkas' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,txt,zip,rar|max:10240',
+            'url' => 'nullable|url|max:2048',
+
+            // Batch upload
+            'files' => 'nullable|array|max:10',
+            'files.*' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,txt,zip,rar|max:10240',
+            'file_metadata' => 'nullable|array',
+            'file_metadata.*.judul' => 'required_with:files|string|max:255',
+            'file_metadata.*.document_type' => 'required_with:files|string|in:laporan_akhir,struktur_organisasi,proker_kerja,data_statistik,dokumen_pendukung,photo_evidence,video_evidence,catatan_bukti,surat_pernyataan,lainnya',
+            'file_metadata.*.keterangan' => 'nullable|string|max:1000',
         ]);
 
-        $replaced = null;
-        if (! empty($data['replaces_evidence_id'])) {
-            $replaced = $selfEvaluation->evidences()
-                ->where('activity_id', $activity->id)
-                ->whereKey($data['replaces_evidence_id'])
-                ->where('status', EvidenceStatus::Revision->value)
-                ->firstOrFail();
-        }
+        $uploadedCount = 0;
 
-        $filePath = null;
-        if ($request->hasFile('berkas')) {
-            $filePath = $request->file('berkas')->store('evidences', 'local');
-            if (! $filePath) {
-                throw new RuntimeException('Berkas bukti tidak berhasil disimpan ke penyimpanan privat.');
+        // Batch upload
+        if (! empty($data['files']) && ! empty($data['file_metadata'])) {
+            foreach ($data['files'] as $index => $file) {
+                if (! $file) {
+                    continue;
+                }
+
+                $metadata = $data['file_metadata'][$index] ?? [];
+                $filePath = $file->store('evidences', 'local');
+
+                if (! $filePath) {
+                    throw new RuntimeException("Berkas bukti #$index tidak berhasil disimpan.");
+                }
+
+                $selfEvaluation->evidences()->create([
+                    'activity_id' => $activity->id,
+                    'judul' => $metadata['judul'] ?? 'Bukti #'.($index + 1),
+                    'document_type' => $metadata['document_type'] ?? 'dokumen_pendukung',
+                    'keterangan' => $metadata['keterangan'] ?? null,
+                    'file_path' => $filePath,
+                    'uploaded_by' => $request->user()->id,
+                ]);
+                $uploadedCount++;
             }
         }
+        // Single file upload (legacy)
+        elseif (! empty($data['judul']) && (! empty($data['berkas']) || ! empty($data['url']))) {
+            $replaced = null;
+            if (! empty($data['replaces_evidence_id'] ?? null)) {
+                $replaced = $selfEvaluation->evidences()
+                    ->where('activity_id', $activity->id)
+                    ->whereKey($data['replaces_evidence_id'])
+                    ->where('status', EvidenceStatus::Revision->value)
+                    ->firstOrFail();
+            }
 
-        $replacement = $selfEvaluation->evidences()->create([
-            'activity_id' => $activity->id,
-            'judul' => $data['judul'],
-            'url' => $data['url'] ?? null,
-            'file_path' => $filePath,
-            'uploaded_by' => $request->user()->id,
-        ]);
-        $replaced?->update([
-            'status' => EvidenceStatus::Superseded,
-            'superseded_by_id' => $replacement->id,
-        ]);
+            $filePath = null;
+            if ($request->hasFile('berkas')) {
+                $filePath = $request->file('berkas')->store('evidences', 'local');
+                if (! $filePath) {
+                    throw new RuntimeException('Berkas bukti tidak berhasil disimpan ke penyimpanan privat.');
+                }
+            }
 
-        return back()->with('success', $replaced ? 'Bukti perbaikan berhasil diajukan; komentar sebelumnya tetap tersimpan.' : 'Bukti kegiatan berhasil ditambahkan.');
+            $replacement = $selfEvaluation->evidences()->create([
+                'activity_id' => $activity->id,
+                'judul' => $data['judul'],
+                'document_type' => $data['document_type'] ?? 'dokumen_pendukung',
+                'keterangan' => $data['keterangan'] ?? null,
+                'url' => $data['url'] ?? null,
+                'file_path' => $filePath,
+                'uploaded_by' => $request->user()->id,
+            ]);
+            $replaced?->update([
+                'status' => EvidenceStatus::Superseded,
+                'superseded_by_id' => $replacement->id,
+            ]);
+            $uploadedCount = 1;
+        }
+
+        if ($uploadedCount === 0) {
+            return back()->withErrors(['files' => 'Silakan upload minimal satu file atau berikan tautan URL.']);
+        }
+
+        return back()->with('success', "Berhasil mengunggah $uploadedCount bukti kegiatan.");
     }
 
     public function destroy(

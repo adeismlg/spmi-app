@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EvidenceDocumentType;
 use App\Enums\EvidenceStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ class Evidence extends Model
     protected $table = 'evidences';
 
     protected $fillable = [
-        'self_evaluation_id', 'activity_id', 'judul', 'file_path', 'url',
+        'self_evaluation_id', 'activity_id', 'judul', 'document_type', 'file_path', 'url', 'keterangan',
         'uploaded_by', 'status', 'reviewed_by', 'reviewed_at', 'superseded_by_id',
     ];
 
@@ -20,6 +21,7 @@ class Evidence extends Model
     {
         return [
             'status' => EvidenceStatus::class,
+            'document_type' => EvidenceDocumentType::class,
             'reviewed_at' => 'datetime',
         ];
     }
