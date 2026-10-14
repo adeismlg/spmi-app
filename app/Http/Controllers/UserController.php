@@ -9,6 +9,7 @@ use App\Services\WorkflowNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
@@ -85,12 +86,12 @@ class UserController extends CrudController
     {
         return auth()->user()->hasRole('admin_spmi') ? [
             [
-                'label' => '<i class="bi bi-person-check"></i> Masquerade',
+                'label' => new HtmlString('<i class="bi bi-person-check"></i> Login As'),
                 'route' => fn ($user) => route('users.impersonate', $user->id),
                 'method' => 'post',
                 'visible' => fn ($user) => $user->canBeImpersonated(),
                 'class' => 'btn-warning btn-sm',
-                'confirm' => fn ($user) => 'Login sebagai '.$user->name.'?',
+                'confirm' => fn ($user) => 'Login as '.$user->name.'?',
             ],
         ] : [];
     }

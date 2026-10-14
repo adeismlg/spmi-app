@@ -137,10 +137,10 @@
         <div class="topbar-actions d-flex align-items-center gap-2">
             <span class="small text-muted d-none d-md-inline">{{ auth()->user()->name }}</span>
             @if (session('impersonated_by'))
-                <span class="badge bg-warning text-dark">Masquerade Mode</span>
+                <span class="badge bg-warning text-dark">Login As Mode</span>
                 <form method="POST" action="{{ route('impersonate.stop') }}" class="m-0">
                     @csrf
-                    <button class="btn btn-link btn-sm px-2 text-warning"><i class="bi bi-arrow-left me-1"></i><span class="d-none d-sm-inline">Kembali ke Admin</span></button>
+                    <button class="btn btn-link btn-sm px-2 text-warning"><i class="bi bi-arrow-left me-1"></i><span class="d-none d-sm-inline">Back to Admin</span></button>
                 </form>
             @endif
             @if (auth()->user()->hasRole('admin_spmi'))

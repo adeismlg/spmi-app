@@ -54,13 +54,15 @@ Route::middleware('auth')->group(function () {
     Route::get('self-evaluations/{selfEvaluation}', [SelfEvaluationController::class, 'show'])
         ->whereNumber('selfEvaluation')->name('self-evaluations.show');
 
+    // Impersonation stop route (accessible when impersonating)
+    Route::post('impersonate/stop', [ImpersonationController::class, 'stopImpersonating'])->name('impersonate.stop');
+
     /* ---------- Admin SPMI: master data & pengaturan siklus ---------- */
     Route::middleware('role:admin_spmi')->group(function () {
         Route::resource('users', UserController::class)->except('show');
 
-        // Impersonation routes (only admin)
+        // Impersonation start route (only admin)
         Route::post('users/{user}/impersonate', [ImpersonationController::class, 'impersonate'])->whereNumber('user')->name('users.impersonate');
-        Route::post('impersonate/stop', [ImpersonationController::class, 'stopImpersonating'])->name('impersonate.stop');
 
         Route::resource('units', UnitController::class)->except('show');
         Route::resource('standards', StandardController::class)->except('show');

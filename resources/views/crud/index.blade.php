@@ -63,10 +63,10 @@
                                     <form method="POST" action="{{ $url }}" class="d-inline"
                                           @if ($confirm) onsubmit="return confirm('{{ addslashes($confirm) }}')" @endif>
                                         @csrf
-                                        <button class="{{ $cls }}">{{ $label }}</button>
+                                        <button class="{{ $cls }}">@if ($label instanceof Illuminate\Support\HtmlString){!! $label !!}@else{{ $label }}@endif</button>
                                     </form>
                                 @else
-                                    <a href="{{ $url }}" class="{{ $cls }}">{{ $label }}</a>
+                                    <a href="{{ $url }}" class="{{ $cls }}">@if ($label instanceof Illuminate\Support\HtmlString){!! $label !!}@else{{ $label }}@endif</a>
                                 @endif
                             @endforeach
 

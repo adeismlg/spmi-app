@@ -1,8 +1,8 @@
-# Admin Impersonation Feature
+# Admin Impersonation Feature (Login As)
 
 ## Overview
 
-The Admin Impersonation feature (often called "Masquerade" or "Login As User") allows administrators with the `admin_spmi` role to temporarily login as another user for testing, troubleshooting, and task completion purposes.
+The Admin Impersonation feature (often called "Login As" or "Sudo Mode") allows administrators with the `admin_spmi` role to temporarily login as another user for testing, troubleshooting, and task completion purposes.
 
 ## Features
 
