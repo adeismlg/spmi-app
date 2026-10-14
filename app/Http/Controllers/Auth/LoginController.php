@@ -28,6 +28,58 @@ class LoginController extends Controller
             ->redirect();
     }
 
+    // public function handleGoogleCallback(Request $request): RedirectResponse
+    // {
+    //     if ($request->query('error')) {
+    //         return redirect()->route('login')->withErrors([
+    //             'google' => 'Login Google dibatalkan atau tidak dapat diselesaikan.',
+    //         ]);
+    //     }
+
+    //     $googleUser = Socialite::driver('google')->user();
+    //     $email = strtolower(trim((string) $googleUser->getEmail()));
+    //     $googleId = (string) $googleUser->getId();
+    //     $emailIsVerified = ($googleUser->user['email_verified'] ?? false) === true;
+
+    //     if (
+    //         $googleId === ''
+    //         || ! $emailIsVerified
+    //         || ! str_ends_with($email, '@'.self::GOOGLE_HOSTED_DOMAIN)
+    //     ) {
+    //         return redirect()->route('login')->withErrors([
+    //             'google' => 'Gunakan akun Google Polinema terverifikasi dengan alamat @polinema.ac.id.',
+    //         ]);
+    //     }
+
+    //     $user = User::query()->where('google_id', $googleId)->first()
+    //         ?? User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+    //     if (! $user) {
+    //         return redirect()->route('login')->withErrors([
+    //             'google' => 'Akun SPMI belum terdaftar. Hubungi administrator untuk mendapatkan akses.',
+    //         ]);
+    //     }
+
+    //     if (
+    //         ($user->google_id !== null && $user->google_id !== $googleId)
+    //         || strtolower($user->email) !== $email
+    //     ) {
+    //         return redirect()->route('login')->withErrors([
+    //             'google' => 'Akun Google tidak cocok dengan akun SPMI. Hubungi administrator.',
+    //         ]);
+    //     }
+
+    //     $user->forceFill([
+    //         'google_id' => $googleId,
+    //         'email_verified_at' => $user->email_verified_at ?? now(),
+    //     ])->save();
+
+    //     Auth::login($user);
+    //     $request->session()->regenerate();
+
+    //     return redirect()->intended(route('dashboard'));
+    // }
+
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
         if ($request->query('error')) {
@@ -36,10 +88,20 @@ class LoginController extends Controller
             ]);
         }
 
-        $googleUser = Socialite::driver('google')->user();
+        try {
+            // Wajib menggunakan stateless() untuk mengatasi masalah sesi di balik Cloudflare Tunnel
+            $googleUser = Socialite::driver('google')->stateless()->user();
+        } catch (\Exception $e) {
+            return redirect()->route('login')->withErrors([
+                'google' => 'Gagal terhubung dengan Google OAuth: ' . $e->getMessage(),
+            ]);
+        }
+
         $email = strtolower(trim((string) $googleUser->getEmail()));
         $googleId = (string) $googleUser->getId();
-        $emailIsVerified = ($googleUser->user['email_verified'] ?? false) === true;
+        
+        // Perbaikan: Google mengembalikan 'verified_email' (bukan email_verified)
+        $emailIsVerified = ($googleUser->user['verified_email'] ?? false) === true;
 
         if (
             $googleId === ''

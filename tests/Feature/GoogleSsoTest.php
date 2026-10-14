@@ -15,6 +15,12 @@ class GoogleSsoTest extends TestCase
 
     public function test_google_redirect_requires_oauth_configuration(): void
     {
+        config([
+            'services.google.client_id' => null,
+            'services.google.client_secret' => null,
+            'services.google.redirect' => null,
+        ]);
+
         $this->get(route('auth.google.redirect'))
             ->assertServiceUnavailable();
     }

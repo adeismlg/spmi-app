@@ -6,7 +6,7 @@ Panduan ini menjelaskan instalasi baru aplikasi SPMI, pengisian skema basis data
 
 Panduan ditulis untuk deployment pada Windows Server/komputer lokal di belakang Cloudflare Tunnel. Perintah Artisan dijalankan dari direktori root proyek, yaitu direktori yang berisi file `artisan`.
 
-> **Peringatan produksi:** seed demo membuat akun dengan password bawaan dan memasukkan data simulasi. Jangan jalankan `DemoSeeder`, `SpmiSeeder`, atau `migrate:fresh --seed` pada basis data produksi.
+> **Peringatan produksi:** `SpmiSeeder` membuat administrator contoh dengan password bawaan, sedangkan `DemoSeeder` membuat data simulasi PPEPP. Jangan jalankan `SpmiSeeder`, `DemoSeeder`, atau `migrate:fresh --seed` pada basis data produksi. `MasterDataSeeder` memuat nama dan email pengguna Polinema dari CSV di repository; pastikan data tersebut memang boleh disimpan pada lingkungan tujuan.
 
 ## 2. Prasyarat server
 
@@ -219,9 +219,9 @@ php artisan db:seed --class=DemoSeeder
 
 `migrate:fresh` menghapus **semua tabel dan data** pada basis data aktif sebelum menjalankan ulang migration. Jalankan hanya setelah memastikan `.env` menunjuk ke basis data development/staging yang boleh dihapus.
 
-`DemoSeeder` menjalankan `SpmiSeeder`, mengimpor workbook standar bila berkas ada, lalu membuat unit, akun, bukti, audit, temuan, RTL, dan dokumen simulasi. Seeder demo menggunakan password contoh `password` dan akun berdomain `spmi.test`. Jangan jalankan pada produksi atau membuka akun demo melalui jaringan publik. Ganti/hapus akun demo setelah simulasi.
+`DemoSeeder` menjalankan `SpmiSeeder` dan `MasterDataSeeder`, mengimpor workbook standar bila berkas ada, lalu membuat bukti, audit, temuan, RTL, dan dokumen simulasi pada unit serta akun master. Berkas `database/data/master_users.csv` menjadi sumber akun; pengguna yang juga tercantum pada `master_units.csv` berperan sebagai auditee, sedangkan pengguna lainnya berperan sebagai auditor. Akun baru diberi password acak yang tidak dibagikan dan diharapkan masuk melalui Google SSO. Jika email auditee muncul pada beberapa unit, unit pertama di CSV yang dipakai. Data workflow yang bertanda `[DATA DEMO]` tetap merupakan simulasi.
 
-`DatabaseSeeder` bawaan proyek membuat `test@example.com` dan bukan akun administrator SPMI. Karena itu, jangan mengandalkan `php artisan migrate --seed` untuk menyiapkan administrator produksi.
+`DatabaseSeeder` menjalankan `SpmiSeeder` dan `MasterDataSeeder`, tetapi tidak membuat alur workflow simulasi. `SpmiSeeder` tetap membuat administrator contoh `admin@spmi.test` dengan password `password`, sehingga `php artisan migrate --seed` hanya untuk lingkungan nonproduksi dan bukan cara menyiapkan administrator produksi.
 
 ## 11. Perbarui database yang sudah berjalan
 
@@ -302,5 +302,6 @@ Setelah aktif, uji login administrator, SSO Google (bila dikonfigurasi), akses u
 | `php artisan spmi:import-standards ... --dry-run` | Memeriksa workbook tanpa menyimpan perubahan | Jalankan sebelum impor sebenarnya |
 | `php artisan spmi:secure-evidences --dry-run` | Memeriksa berkas bukti lama yang akan dipindahkan | Jalankan sebelum pemindahan |
 | `php artisan migrate:fresh` | Menghapus seluruh tabel lalu membangun ulang basis data | Hanya untuk instalasi disposable/nonproduksi |
-| `php artisan db:seed --class=SpmiSeeder` | Membuat data contoh dasar dan admin default | Development saja; admin `admin@spmi.test` menggunakan password `password` |
-| `php artisan db:seed --class=DemoSeeder` | Membuat akun dan alur data demo lengkap | Development/staging tertutup saja; menggunakan password demo |
+| `php artisan db:seed --class=SpmiSeeder` | Membuat standar dasar dan admin contoh | Nonproduksi saja; admin `admin@spmi.test` menggunakan password `password` |
+| `php artisan db:seed --class=MasterDataSeeder` | Mengimpor akun, peran, dan hierarki unit dari CSV master | Pastikan data personal pada CSV boleh dimuat di lingkungan tujuan |
+| `php artisan db:seed --class=DemoSeeder` | Memuat master data dan membuat alur workflow simulasi | Development/staging tertutup saja; workflow berisi data `[DATA DEMO]` |

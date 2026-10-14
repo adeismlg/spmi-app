@@ -10,11 +10,8 @@ use App\Enums\DocumentType;
 use App\Enums\EvaluationPeriod;
 use App\Enums\EvidenceStatus;
 use App\Enums\IndicatorType;
-use App\Enums\Jabatan;
-use App\Enums\Jenjang;
 use App\Enums\Semester;
 use App\Enums\SubmissionStatus;
-use App\Enums\UnitType;
 use App\Models\Activity;
 use App\Models\Audit;
 use App\Models\AuditChecklist;
@@ -28,11 +25,9 @@ use App\Models\ManagementReview;
 use App\Models\SelfEvaluation;
 use App\Models\Standard;
 use App\Models\Statement;
-use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -46,32 +41,12 @@ class DemoWorkflowSeeder extends Seeder
                 throw new RuntimeException('Data demo memerlukan siklus SPMI aktif.');
             }
 
-            $institution = Unit::where('kode', 'INST')->firstOrFail();
-            $unit = Unit::firstOrCreate(
-                ['kode' => 'DEMO-PRODI'],
-                [
-                    'nama' => 'Program Studi Contoh (Data Demo)',
-                    'tipe' => UnitType::Prodi,
-                    'jenjang' => Jenjang::D4,
-                    'parent_id' => $institution->id,
-                ],
-            );
-            $demoAuditee = User::updateOrCreate(
-                ['email' => 'demo.auditee@spmi.test'],
-                [
-                    'name' => 'Auditee Demo',
-                    'password' => Hash::make('password'),
-                    'unit_id' => $unit->id,
-                    'jabatan' => Jabatan::KoordinatorProdi,
-                ],
-            );
-            $demoAuditee->syncRoles(['auditee']);
-
-            $demoAuditor = User::updateOrCreate(
-                ['email' => 'demo.auditor@spmi.test'],
-                ['name' => 'Auditor Demo', 'password' => Hash::make('password'), 'unit_id' => null],
-            );
-            $demoAuditor->syncRoles(['auditor']);
+            $demoAuditee = User::role('auditee')->with('unit')->orderBy('email')->firstOrFail();
+            $demoAuditor = User::role('auditor')->orderBy('email')->firstOrFail();
+            $unit = $demoAuditee->unit;
+            if (! $unit) {
+                throw new RuntimeException('Data demo memerlukan pengguna auditee dengan unit master.');
+            }
 
             $demoDocuments = [
                 [

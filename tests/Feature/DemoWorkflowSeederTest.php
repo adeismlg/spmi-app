@@ -23,7 +23,7 @@ class DemoWorkflowSeederTest extends TestCase
 
         $cycle = Cycle::current();
         $dashboard = app(DashboardService::class)->build($cycle, null);
-        $demoAuditee = User::where('email', 'demo.auditee@spmi.test')->firstOrFail();
+        $demoAuditee = User::role('auditee')->orderBy('email')->firstOrFail();
 
         $this->assertDatabaseCount('self_evaluations', 4);
         $this->assertDatabaseCount('activities', 4);
@@ -40,6 +40,8 @@ class DemoWorkflowSeederTest extends TestCase
         $this->assertSame(3, $dashboard['stats']['findings_total']);
         $this->assertSame(1, $dashboard['stats']['actions_overdue']);
         $this->assertTrue($demoAuditee->hasRole('auditee'));
+        $this->assertDatabaseMissing('users', ['email' => 'demo.auditee@spmi.test']);
+        $this->assertDatabaseMissing('units', ['kode' => 'DEMO-PRODI']);
 
         Storage::disk('public')->assertExists([
             'demo/documents/kebijakan-mutu.txt',
