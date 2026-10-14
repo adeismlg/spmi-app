@@ -21,9 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Register impersonation detection middleware globally
         $middleware->append(DetectImpersonation::class);
-    })
 
-    ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,

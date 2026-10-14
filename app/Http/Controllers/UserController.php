@@ -90,7 +90,7 @@ class UserController extends CrudController
                 'method' => 'post',
                 'visible' => fn ($user) => $user->canBeImpersonated(),
                 'class' => 'btn-warning btn-sm',
-                'confirm' => 'Login sebagai '.$user->name.'?',
+                'confirm' => fn ($user) => 'Login sebagai '.$user->name.'?',
             ],
         ] : [];
     }

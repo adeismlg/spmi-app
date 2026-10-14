@@ -57,10 +57,11 @@
                                     $label = $a['label'] instanceof \Closure ? $a['label']($row) : $a['label'];
                                     $url = $a['route']($row);
                                     $cls = 'btn btn-sm '.($a['class'] ?? 'btn-outline-secondary');
+                                    $confirm = isset($a['confirm']) ? ($a['confirm'] instanceof \Closure ? $a['confirm']($row) : $a['confirm']) : null;
                                 @endphp
                                 @if (($a['method'] ?? 'get') === 'post')
                                     <form method="POST" action="{{ $url }}" class="d-inline"
-                                          @isset($a['confirm']) onsubmit="return confirm('{{ $a['confirm'] }}')" @endisset>
+                                          @if ($confirm) onsubmit="return confirm('{{ addslashes($confirm) }}')" @endif>
                                         @csrf
                                         <button class="{{ $cls }}">{{ $label }}</button>
                                     </form>
