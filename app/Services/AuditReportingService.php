@@ -107,12 +107,12 @@ class AuditReportingService
         }
 
         $totalAudits = count($allAudits);
-        $completedAudits = count(array_filter($allAudits, fn ($a) => $a['status'] === 'selesai'));
-        $avgCompliance = count($allAudits) > 0 ? round(array_reduce($allAudits, fn ($carry, $a) => $carry + $a['compliance_pct'], 0) / count($allAudits), 2) : 0;
-        $totalFindings = array_sum(array_column($allAudits, 'total_findings'));
-        $totalRtl = array_sum(array_column($allAudits, 'total_rtl'));
-        $rtlSelesai = array_sum(array_column($allAudits, 'rtl_selesai'));
-        $rtlTerverifikasi = array_sum(array_column($allAudits, 'rtl_terverifikasi'));
+        $completedAudits = count(array_filter($allAudits, fn ($a) => $a->status === 'selesai'));
+        $avgCompliance = count($allAudits) > 0 ? round(array_reduce($allAudits, fn ($carry, $a) => $carry + $a->compliance_pct, 0) / count($allAudits), 2) : 0;
+        $totalFindings = array_sum(array_map(fn ($a) => $a->total_findings, $allAudits));
+        $totalRtl = array_sum(array_map(fn ($a) => $a->total_rtl, $allAudits));
+        $rtlSelesai = array_sum(array_map(fn ($a) => $a->rtl_selesai, $allAudits));
+        $rtlTerverifikasi = array_sum(array_map(fn ($a) => $a->rtl_terverifikasi, $allAudits));
 
         return [
             'total_audits' => $totalAudits,
