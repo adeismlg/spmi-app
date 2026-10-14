@@ -8,6 +8,7 @@ use App\Models\Evidence;
 use App\Models\SelfEvaluation;
 use App\Services\EvaluationAccess;
 use App\Services\SemesterWorkflow;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +23,7 @@ class EvidenceController extends Controller
         Activity $activity,
         EvaluationAccess $access,
         SemesterWorkflow $workflow,
-    ): RedirectResponse {
+    ): JsonResponse|RedirectResponse {
         abort_unless($access->canEdit($request->user(), $selfEvaluation), 403);
         abort_unless($activity->indicator_id === $selfEvaluation->indicator_id && $activity->is_active, 404);
         abort_unless(
@@ -112,10 +113,18 @@ class EvidenceController extends Controller
         }
 
         if ($uploadedCount === 0) {
-            return back()->withErrors(['files' => 'Silakan upload minimal satu file atau berikan tautan URL.']);
+            $response = ['errors' => ['files' => 'Silakan upload minimal satu file atau berikan tautan URL.']];
+
+            return $request->expectsJson()
+                ? response()->json($response, 422)
+                : back()->withErrors($response);
         }
 
-        return back()->with('success', "Berhasil mengunggah $uploadedCount bukti kegiatan.");
+        $message = "Berhasil mengunggah $uploadedCount bukti kegiatan.";
+
+        return $request->expectsJson()
+            ? response()->json(['success' => true, 'message' => $message])
+            : back()->with('success', $message);
     }
 
     public function destroy(
